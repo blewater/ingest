@@ -5,6 +5,16 @@
 *.so
 *.dylib
 
+.idea
+
+colly_cache
+
+output
+
+processed
+
+text
+
 # Test binary, built with `go test -c`
 *.test
 
