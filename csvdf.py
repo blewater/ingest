@@ -1,7 +1,6 @@
 import os
 import tiktoken
 import pandas as pd
-from matplotlib import pyplot as plt
 import openai
 
 domain = "stack.optimism.io"

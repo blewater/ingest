@@ -1,2 +1,2 @@
 # ingest
-Build LLM from repos
+Build LLM from repos using the OpenAI API.

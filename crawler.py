@@ -1,17 +1,19 @@
-import requests
+import os
 import re
 import urllib.request
-from bs4 import BeautifulSoup
 from collections import deque
 from html.parser import HTMLParser
 from urllib.parse import urlparse
-import os
+
+import requests
+from bs4 import BeautifulSoup
 
 # Regex pattern to match a URL
 HTTP_URL_PATTERN = r'^http[s]*://.+'
 
-domain = "stack.optimism.io" # <- put your domain to be crawled
-full_url = "https://stack.optimism.io" # <- put your domain to be crawled with https or http
+domain = "stack.optimism.io"  # <- put your domain to be crawled
+full_url = "https://stack.optimism.io"  # <- put your domain to be crawled with https or http
+
 
 # Create a class to parse the HTML and get the hyperlinks
 class HyperlinkParser(HTMLParser):
@@ -24,7 +26,7 @@ class HyperlinkParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
 
-        # If the tag is an anchor tag and it has an href attribute, add the href attribute to the list of hyperlinks
+        # If the tag is an anchor tag, and it has a href attribute, add the href attribute to the list of hyperlinks
         if tag == "a" and "href" in attrs:
             self.hyperlinks.append(attrs["href"])
 
@@ -51,6 +53,7 @@ def get_hyperlinks(url):
     parser.feed(html)
 
     return parser.hyperlinks
+
 
 # Function to get the hyperlinks from a URL that are within the same domain
 def get_domain_hyperlinks(local_domain, url):
@@ -81,6 +84,7 @@ def get_domain_hyperlinks(local_domain, url):
     # Return the list of hyperlinks that are within the same domain
     return list(set(clean_links))
 
+
 def crawl(url):
     # Parse the URL and get the domain
     local_domain = urlparse(url).netloc
@@ -89,7 +93,7 @@ def crawl(url):
     queue = deque([url])
 
     # Create a set to store the URLs that have already been seen (no duplicates)
-    seen = set([url])
+    seen = {url}
 
     # Create a directory to store the text files
     if not os.path.exists("text/"):
@@ -119,7 +123,7 @@ def crawl(url):
             text = soup.get_text()
 
             # If the crawler gets to a page that requires JavaScript, it will stop the crawl
-            if ("You need to enable JavaScript to run this app." in text):
+            if "You need to enable JavaScript to run this app." in text:
                 print("Unable to parse page " + url + " due to JavaScript being required")
 
             # Otherwise, write the text to the file in the text directory

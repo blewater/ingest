@@ -10,7 +10,7 @@ print(df.head())
 
 
 def create_context(
-        question, df, max_len=1800, size="ada"
+        question, data_frame, max_len=1800, size="ada"
 ):
     """
     Create a context for a question by finding the most similar context from the dataframe
@@ -20,13 +20,13 @@ def create_context(
     q_embeddings = openai.Embedding.create(input=question, engine='text-embedding-ada-002')['data'][0]['embedding']
 
     # Get the distances from the embeddings
-    df['distances'] = distances_from_embeddings(q_embeddings, df['embeddings'].values, distance_metric='cosine')
+    data_frame['distances'] = distances_from_embeddings(q_embeddings, data_frame['embeddings'].values, distance_metric='cosine')
 
     returns = []
     cur_len = 0
 
     # Sort by distance and add the text to the context until the context is too long
-    for i, row in df.sort_values('distances', ascending=True).iterrows():
+    for i, row in data_frame.sort_values('distances', ascending=True).iterrows():
 
         # Add the length of the text to the current length
         cur_len += row['n_tokens'] + 4
@@ -43,7 +43,7 @@ def create_context(
 
 
 def answer_question(
-        df,
+        data_frame,
         model="text-davinci-003",
         question="Am I allowed to publish model outputs to Twitter, without a human review?",
         max_len=1800,
@@ -57,7 +57,7 @@ def answer_question(
     """
     context = create_context(
         question,
-        df,
+        data_frame,
         max_len=max_len,
         size=size,
     )
