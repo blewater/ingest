@@ -15,13 +15,13 @@ import (
 
 func main() {
 	if len(os.Args) != 2 {
-		log.Fatal("Usage: ./crawler <root_url>")
+		log.Fatal("Usage: ./main <root_url>")
 	}
 
 	rootURL := os.Args[1]
 
-	outputDir := "./output"
-	_ = os.RemoveAll(outputDir)
+	outputDir := "./output" + string(os.PathSeparator) + getDomain(rootURL)
+	_ = os.MkdirAll(outputDir, os.ModePerm)
 
 	c := colly.NewCollector(
 		colly.AllowedDomains(getDomain(rootURL)),
@@ -36,13 +36,8 @@ func main() {
 
 	c.OnResponse(func(r *colly.Response) {
 		urlPath := r.Request.URL.Path
-		var fileName string
 
-		if urlPath == "/" || urlPath == "" {
-			fileName = "root.txt"
-		} else {
-			fileName = fmt.Sprintf("%s.txt", strings.Replace(urlPath, "/", "_", -1))
-		}
+		fileName := fmt.Sprintf("%s.txt", strings.Replace(urlPath, "/", "_", -1))
 
 		filePath := filepath.Join(outputDir, fileName)
 		_ = os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
