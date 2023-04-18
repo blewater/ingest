@@ -1,38 +1,90 @@
 import os
+import re
 import tiktoken
 import pandas as pd
 import openai
-
-domain = "stack.optimism.io"
+from urllib.parse import urlparse
 
 # Create a list to store the text files
 texts = []
 
 
-def remove_newlines(serie):
-    serie = serie.str.replace('\n', ' ')
-    serie = serie.str.replace('\\n', ' ')
-    serie = serie.str.replace('  ', ' ')
-    serie = serie.str.replace('  ', ' ')
-    return serie
+def process_git_folder(git_folder_path):
+    texts = []
+
+    for root, _, files in os.walk(git_folder_path):
+        for file in files:
+            if file.endswith(".go"):
+                file_path = os.path.join(root, file)
+
+                with open(file_path, "r", encoding="UTF-8") as f:
+                    text = f.read()
+
+                    texts.append((file, text))
+
+    data_frame = pd.DataFrame(texts, columns=['fname', 'text'])
+    data_frame['text'] = data_frame.fname + ". " + data_frame.text.apply(remove_newlines)
+
+    return data_frame
 
 
-# Get all the text files in the text directory
-# for file in os.listdir("output/" + domain + "/"):
-for file in os.listdir("output/"):
-    # Open the file and read the text
-    # with open("text/" + domain + "/" + file, "r", encoding="UTF-8") as f:
-    with open("output/" + "/" + file, "r", encoding="UTF-8") as f:
-        text = f.read()
+def process_website(url):
+    domain = urlparse(url).hostname
 
-        # Omit the first 11 lines and the last 4 lines, then replace -, _, and #update with spaces.
-        texts.append((file[11:-4].replace('-', ' ').replace('_', ' ').replace('#update', ''), text))
+    # Create a list to store the text files
+    texts = []
 
-# Create a dataframe from the list of texts
-df = pd.DataFrame(texts, columns=['fname', 'text'])
+    # Get all the text files in the text directory
+    for file in os.listdir("text/" + domain + "/"):
+        # Open the file and read the text
+        with open("text/" + domain + "/" + file, "r", encoding="UTF-8") as f:
+            text = f.read()
 
-# Set the text column to be the raw text with the newlines removed
-df['text'] = df.fname + ". " + remove_newlines(df.text)
+            # Omit the first 11 lines and the last 4 lines, then replace -, _, and #update with spaces.
+            texts.append((file[11:-4].replace('-', ' ').replace('_', ' ').replace('#update', ''), text))
+
+    # Create a dataframe from the list of texts
+    data_frame = pd.DataFrame(texts, columns=['fname', 'text'])
+
+    # Set the text column to be the raw text with the newlines removed
+    data_frame['text'] = data_frame.fname + ". " + remove_newlines(data_frame.text)
+
+    return data_frame
+
+
+def is_url(s):
+    pattern = re.compile(r'https?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+    return bool(pattern.match(s))
+
+
+# Read the configuration file
+with open("config.txt", "r") as f:
+    config_lines = [line.strip() for line in f.readlines()]
+
+# Process each configuration line (website URL or local Git folder path)
+dfs = []
+for line in config_lines:
+    if is_url(line):
+        text = process_website(line)
+        df = pd.DataFrame({'fname': [urlparse(line).hostname], 'text': [text]})
+        dfs.append(df)
+    else:
+        df = process_git_folder(line)
+        dfs.append(df)
+
+# Combine all data frames
+combined_df = pd.concat(dfs, ignore_index=True)
+combined_df.to_csv('processed/scraped2.csv')
+combined_df.head()
+
+
+def remove_newlines(content):
+    content = content.str.replace('\n', ' ')
+    content = content.str.replace('\\n', ' ')
+    content = content.str.replace('  ', ' ')
+    content = content.str.replace('  ', ' ')
+    return content
+
 
 # Tokenize
 # Load the cl100k_base tokenizer which is designed to work with the ada-002 model
@@ -106,7 +158,8 @@ df = pd.DataFrame(shortened, columns=['text'])
 df['n_tokens'] = df.text.apply(lambda x: len(tokenizer.encode(x)))
 df.n_tokens.hist()
 
-df['embeddings'] = df.text.apply(lambda x: openai.Embedding.create(input=x, engine='text-embedding-ada-002')['data'][0]['embedding'])
+df['embeddings'] = df.text.apply(
+    lambda x: openai.Embedding.create(input=x, engine='text-embedding-ada-002')['data'][0]['embedding'])
 
 df.to_csv('processed/embeddings.csv')
 print(df.head())

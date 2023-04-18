@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net/url"
@@ -13,13 +14,41 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
+const ConfigFile = "config.txt"
+
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatal("Usage: ./main <root_url>")
+	// Check if the config file exists
+	if _, err := os.Stat(ConfigFile); os.IsNotExist(err) {
+		log.Fatalf("Config file %s does not exist.", ConfigFile)
 	}
 
-	rootURL := os.Args[1]
+	file, err := os.Open(ConfigFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		entry := scanner.Text()
+		if isURL(entry) {
+			crawlWebsite(entry)
+		} else {
+			processLocalGitFolder(entry)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func isURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
+func crawlWebsite(rootURL string) {
 	outputDir := "./output" + string(os.PathSeparator) + getDomain(rootURL)
 	_ = os.MkdirAll(outputDir, os.ModePerm)
 
@@ -59,6 +88,14 @@ func main() {
 	}
 
 	c.Wait()
+}
+
+func processLocalGitFolder(folderPath string) {
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		log.Printf("Local git folder does not exist: %s\n", folderPath)
+		return
+	}
+	// Add any additional processing for local git folders here
 }
 
 func getDomain(rawURL string) string {
