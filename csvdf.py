@@ -57,9 +57,18 @@ def is_url(s):
     return bool(pattern.match(s))
 
 
+if len(sys.argv) != 2:
+    print("Usage: python main.py <config_file>")
+    sys.exit(1)
+
+config_file = sys.argv[1]
+
 # Read the configuration file
-with open("config.txt", "r") as f:
+with open(config_file, "r") as f:
     config_lines = [line.strip() for line in f.readlines()]
+
+# Remove empty lines
+config_lines = [line for line in config_lines if line]
 
 # Process each configuration line (website URL or local Git folder path)
 dfs = []

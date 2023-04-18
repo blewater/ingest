@@ -14,15 +14,19 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-const ConfigFile = "config.txt"
-
 func main() {
-	// Check if the config file exists
-	if _, err := os.Stat(ConfigFile); os.IsNotExist(err) {
-		log.Fatalf("Config file %s does not exist.", ConfigFile)
+	if len(os.Args) != 2 {
+		log.Fatalln("Usage: ./main <config_file>")
 	}
 
-	file, err := os.Open(ConfigFile)
+	configFilename := os.Args[1]
+
+	// Check if the config file exists
+	if _, err := os.Stat(configFilename); os.IsNotExist(err) {
+		log.Fatalf("Config file %s does not exist.", configFilename)
+	}
+
+	file, err := os.Open(configFilename)
 	if err != nil {
 		log.Fatal(err)
 	}
