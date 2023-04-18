@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# config files without extension
+*
+
 .idea
 
 colly_cache
@@ -23,3 +26,6 @@ text
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# jetbrains project
+*.run
