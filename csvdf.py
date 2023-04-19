@@ -6,10 +6,11 @@ import openai
 from urllib.parse import urlparse
 
 # Create a list to store the text files
-texts = []
+IGNORE_TEST_FILES = False
 
 
 def process_git_folder(git_folder_path):
+def process_git_folder(git_folder_path, ignore_test_files=True):
     texts = []
 
     for root, _, files in os.walk(git_folder_path):
