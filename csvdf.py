@@ -70,9 +70,27 @@ with open(config_file, "r") as f:
 # Remove empty lines
 config_lines = [line for line in config_lines if line]
 
+# Check if the topic property exists
+topic = None
+for line in config_lines:
+    if line.startswith("topic:"):
+        topic = line.split(":", 1)[1].strip()
+        break
+
+if topic is None:
+    print("Error: The topic property does not exist in the config file.")
+    sys.exit(1)
+
 # Process each configuration line (website URL or local Git folder path)
 dfs = []
+# Initialize a flag to check if the topic line has been processed
+topic_line_read = False
 for line in config_lines:
+    if not topic_line_read:
+        # Ignore the first non-empty line, which is the topic line
+        topic_line_read = True
+        continue
+
     if is_url(line):
         text = process_website(line)
         df = pd.DataFrame({'fname': [urlparse(line).hostname], 'text': [text]})
@@ -83,7 +101,7 @@ for line in config_lines:
 
 # Combine all data frames
 combined_df = pd.concat(dfs, ignore_index=True)
-combined_df.to_csv('processed/scraped2.csv')
+csv_filename = f"processed/{topic}.csv"
 combined_df.head()
 
 
@@ -167,8 +185,10 @@ df = pd.DataFrame(shortened, columns=['text'])
 df['n_tokens'] = df.text.apply(lambda x: len(tokenizer.encode(x)))
 df.n_tokens.hist()
 
-df['embeddings'] = df.text.apply(
+embeddings_filename = f"processed/{topic}_embeddings.csv"
+df[embeddings_filename] = df.text.apply(
     lambda x: openai.Embedding.create(input=x, engine='text-embedding-ada-002')['data'][0]['embedding'])
 
-df.to_csv('processed/embeddings.csv')
+df.to_csv(embeddings_filename)
+print(f"Saved combined data frames to {embeddings_filename}")
 print(df.head())

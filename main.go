@@ -26,6 +26,10 @@ func main() {
 		log.Fatalf("Config file %s does not exist.", configFilename)
 	}
 
+	processConfig(configFilename)
+}
+
+func processConfig(configFilename string) {
 	file, err := os.Open(configFilename)
 	if err != nil {
 		log.Fatal(err)
@@ -33,8 +37,21 @@ func main() {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	topicFound := false
 	for scanner.Scan() {
-		entry := scanner.Text()
+		entry := strings.TrimSpace(scanner.Text())
+		if len(entry) == 0 { // Skip empty lines
+			continue
+		}
+		if strings.HasPrefix(entry, "topic:") {
+			topicValue := strings.TrimSpace(strings.TrimPrefix(entry, "topic:"))
+			if len(strings.Fields(topicValue)) != 1 {
+				log.Fatalf("Error: The topic value should be a single continuous string, found: %s", topicValue)
+			}
+			topicFound = true
+
+			continue
+		}
 		if isURL(entry) {
 			crawlWebsite(entry)
 		} else {
@@ -45,6 +62,10 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+
+	if !topicFound {
+		log.Fatal("Error: The topic property does not exist in the config file.")
+	}
 }
 
 func isURL(str string) bool {
@@ -53,6 +74,7 @@ func isURL(str string) bool {
 }
 
 func crawlWebsite(rootURL string) {
+	fmt.Println("Crawling website:", rootURL)
 	outputDir := "./output" + string(os.PathSeparator) + getDomain(rootURL)
 	_ = os.MkdirAll(outputDir, os.ModePerm)
 
@@ -99,7 +121,8 @@ func processLocalGitFolder(folderPath string) {
 		log.Printf("Local git folder does not exist: %s\n", folderPath)
 		return
 	}
-	// Add any additional processing for local git folders here
+
+	fmt.Println("local git folder to process:", folderPath)
 }
 
 func getDomain(rawURL string) string {
