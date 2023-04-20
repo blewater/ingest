@@ -53,9 +53,25 @@ def process_website(url):
         # Open the file and read the web text
         with open(CRAWLED_PAGES + domain + "/" + file, "r", encoding="UTF-8") as web_file:
             web_text = web_file.read()
+            clean_filename = file
+            if file == "_.txt":
+                clean_filename = "index"
+            elif file == ".txt" or 'policy' in file or 'cgi' in file or 'php' in file or 'asp' in file or \
+                    'aspx' in file or 'legal' in file or 'gateway-terms' in file or 'website-terms-conditions' in file:
+                continue
+            else:
+                # Remove leading and trailing underscores
+                clean_filename = file.strip('_')
 
-            # Omit the first 11 lines and the last 4 lines, then replace -, _, and #update with spaces.
-            texts.append((file[11:-4].replace('-', ' ').replace('_', ' ').replace('#update', ''), web_text))
+                # Remove the prefix '_docs_' and postfix '_.txt' or '_.html'
+                clean_filename = clean_filename.replace('_docs_', '', 1)  # Remove prefix '_docs_' once
+                clean_filename = clean_filename.replace('_.txt', '')  # Remove postfix '_.txt'
+                clean_filename = clean_filename.replace('.txt', '')  # Remove postfix '_.txt'
+                clean_filename = clean_filename.replace('.html.txt', '')  # Remove postfix '_.html'
+                clean_filename = clean_filename.replace('.html', '')  # Remove postfix '_.html'
+
+            print('file:', file, ", ", clean_filename)
+            texts.append((clean_filename, web_text))
 
     # Create a dataframe from the list of texts
     data_frame = pd.DataFrame(texts, columns=['fname', 'text'])
