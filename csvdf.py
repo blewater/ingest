@@ -193,6 +193,8 @@ df = pd.DataFrame(shortened, columns=['text'])
 df['n_tokens'] = df.text.apply(lambda x: len(tokenizer.encode(x)))
 df.n_tokens.hist()
 
+print("Completed tokenization.")
+
 embeddings_filename = f"processed/{topic}_embeddings.csv"
 df[embeddings_filename] = df.text.apply(
     lambda x: openai.Embedding.create(input=x, engine='text-embedding-ada-002')['data'][0]['embedding'])
