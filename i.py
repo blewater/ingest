@@ -3,17 +3,21 @@ import openai
 import pandas as pd
 from openai.embeddings_utils import distances_from_embeddings
 
+GPT_3_5_TURBO = "gpt-3.5-turbo"
+
 # This file is meant for interactive mode, so we don't need to pass in a filename
 # call load_data() to load the data from a file
 g_full_path = None
-MAX_LEN = 4102
-MAX_TOKENS = 200
+
+# Total for GPT-3.5-turbo: 4096
+MAX_LEN = 2896
+MAX_TOKENS = 1200
 
 # For future use
 size = "ada"
 
 
-def create_context(embeds_index, question, data_frame, max_len=1800):
+def create_context(embeds_index, question, data_frame, max_len=MAX_LEN):
     """
     Create a context for a question by finding the most similar context from the dataframe
     """
@@ -51,7 +55,7 @@ def create_context(embeds_index, question, data_frame, max_len=1800):
 def answer_question(
         embeds_index,
         data_frame,
-        model="gpt-3.5-turbo",
+        model=GPT_3_5_TURBO,
         question="Am I allowed to publish model outputs to Twitter, without a human review?",
         max_len_in=MAX_LEN,
         debug=False,
