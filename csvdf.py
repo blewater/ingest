@@ -128,8 +128,7 @@ for line in config_lines:
 
     if is_url(line):
         print("Processing website: " + line + "...")
-        site_text = process_website(line)
-        df = pd.DataFrame({'fname': [urlparse(line).hostname], 'text': [site_text]})
+        df = process_website(line)
         dfs.append(df)
     else:
         print("Processing Git folder: " + line + "...")
