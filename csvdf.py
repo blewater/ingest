@@ -24,7 +24,7 @@ def process_git_folder(git_folder_path, ignore_test_files=True):
 
     for root, _, files in os.walk(git_folder_path):
         for file in files:
-            if file.endswith(".go"):
+            if file != "bindata.go" and not file.endswith("pb.go") and file.endswith(".go"):
                 # Ignore test files if the flag is set to True
                 if ignore_test_files and file.endswith("_test.go"):
                     continue
@@ -33,6 +33,11 @@ def process_git_folder(git_folder_path, ignore_test_files=True):
 
                 with open(file_path, "r", encoding="UTF-8") as go_file:
                     go_content = go_file.read()
+
+                    # Skip files that are too long or contain null bytes
+                    size = len(go_content)
+                    if size > 120000:
+                        continue
 
                     texts.append((file, go_content))
 
