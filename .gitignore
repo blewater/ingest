@@ -1,3 +1,10 @@
+!.gitattributes
+
+# config files without extension
+*
+!*/
+!*.*
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -5,10 +12,8 @@
 *.so
 *.dylib
 
-# config files without extension
-*
-!*/
-!*.*
+# ignore macOS specific files
+.DS_Store
 
 .idea
 
