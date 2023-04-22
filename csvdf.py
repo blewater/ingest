@@ -1,3 +1,5 @@
+# Purpose: Convert Site, Github (Go initially) input files to Pandas DataFrame
+# with embeddings column
 import os
 import re
 import sys
@@ -41,7 +43,10 @@ def process_git_folder(git_folder_path, ignore_test_files=True):
 
                     texts.append((file, go_content))
 
+    # Create a dataframe from the list of texts
     data_frame = pd.DataFrame(texts, columns=['fname', 'text'])
+
+    # Set the code text column to be the raw code text with the newlines removed
     data_frame['text'] = data_frame.fname + ". " + remove_newlines(data_frame.text)
 
     return data_frame
@@ -75,7 +80,7 @@ def process_website(url):
                 clean_filename = clean_filename.replace('.html.txt', '')  # Remove postfix '_.html'
                 clean_filename = clean_filename.replace('.html', '')  # Remove postfix '_.html'
 
-            print('file:', file, ", ", clean_filename)
+            # print('file:', file, ", ", clean_filename)
             texts.append((clean_filename, web_text))
 
     # Create a dataframe from the list of texts
@@ -211,14 +216,16 @@ for row in df.iterrows():
 
 df = pd.DataFrame(shortened, columns=['text'])
 df['n_tokens'] = df.text.apply(lambda x: len(tokenizer.encode(x)))
-df.n_tokens.hist()
+print(df.n_tokens.hist())
 
 print("Completed tokenization.")
 
-embeddings_filename = f"processed/{topic}_embeddings.csv"
-df[embeddings_filename] = df.text.apply(
-    lambda x: openai.Embedding.create(input=x, engine='text-embedding-ada-002')['data'][0]['embedding'])
+# Note that you may run into rate limit issues depending on how many files you try to embed Please check out our rate
+# limit guide to learn more on how to handle this: https://platform.openai.com/docs/guides/rate-limits
 
+embeddings_filename = f"processed/{topic}_embeddings.csv"
+df['embeddings'] = df.text.apply(
+    lambda x: openai.Embedding.create(input=x, engine='text-embedding-ada-002')['data'][0]['embedding'])
 df.to_csv(embeddings_filename)
 print(f"Saved combined data frames to {embeddings_filename}")
 print(df.head())

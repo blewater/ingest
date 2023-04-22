@@ -1,3 +1,4 @@
+import ast
 import numpy as np
 import openai
 import pandas as pd
@@ -17,19 +18,16 @@ MAX_TOKENS = 1200
 size = "ada"
 
 
-def create_context(embeds_index, question, data_frame, max_len=MAX_LEN):
+def create_context(question, data_frame, max_len=1800):
     """
     Create a context for a question by finding the most similar context from the dataframe
     """
-
-    if embeds_index is None:
-        raise ValueError("embeds_index or embeddings .csv filename argument must not be None")
 
     # Get the embeddings for the question
     q_embeddings = openai.Embedding.create(input=question, engine='text-embedding-ada-002')['data'][0]['embedding']
 
     # Get the distances from the embeddings
-    data_frame['distances'] = distances_from_embeddings(q_embeddings, data_frame[embeds_index].values,
+    data_frame['distances'] = distances_from_embeddings(q_embeddings, data_frame['embeddings'].values,
                                                         distance_metric='cosine')
 
     returns = []
@@ -52,29 +50,13 @@ def create_context(embeds_index, question, data_frame, max_len=MAX_LEN):
     return "\n\n###\n\n".join(returns)
 
 
-def answer_question(
-        embeds_index,
-        data_frame,
-        model=GPT_3_5_TURBO,
-        question="Am I allowed to publish model outputs to Twitter, without a human review?",
-        max_len_in=MAX_LEN,
-        debug=False,
-        max_tokens_in=MAX_TOKENS,
-        stop_sequence=None
-):
+def answer_question(data_frame, model=GPT_3_5_TURBO,
+                    question="Am I allowed to publish model outputs to Twitter, without a human review?",
+                    max_len_in=MAX_LEN, debug=False, max_tokens_in=MAX_TOKENS, stop_sequence=None):
     """
     Answer a question based on the most similar context from the dataframe texts
     """
-
-    if embeds_index is None:
-        raise ValueError("embeds_index or embeddings .csv filename argument must not be None")
-
-    context = create_context(
-        embeds_index,
-        question,
-        data_frame,
-        max_len=max_len_in,
-    )
+    context = create_context(question, data_frame, max_len=max_len_in)
     # If debug, print the raw model response
     if debug:
         print("Context:\n" + context)
@@ -84,6 +66,8 @@ def answer_question(
         # Create a list of messages
         messages = [
             {"role": "system", "content": "You are an AI that answers questions based on the provided context."},
+            {"role": "system", "content": "Let's think step by step."},
+            {"role": "system", "content": "Respond as an expert."},
             {"role": "user", "content": f"Context: {context}\n\n---\n\nQuestion: {question}\nAnswer:"}
         ]
 
@@ -94,7 +78,7 @@ def answer_question(
             max_tokens=max_tokens_in,
             n=1,
             stop=stop_sequence,
-            temperature=0
+            temperature=0.8,
         )
 
         return response.choices[0].message['content'].strip()
@@ -104,9 +88,11 @@ def answer_question(
 
 
 def load_data(filename):
-    full_path = f'processed/{filename}'
+    full_path = f'processed/{filename}_embeddings.csv'
+    print("Loading data from ", full_path, "...")
     df = pd.read_csv(full_path, index_col=0)
-    df[full_path] = df[full_path].apply(eval).apply(np.array)
-    return full_path, df
 
-# g_full_path, data_frame = load_data('processed/embeddings.csv')
+    # Use the 'text' column for processing
+    df['embeddings'] = df['embeddings'].apply(ast.literal_eval).apply(np.array)
+
+    return df

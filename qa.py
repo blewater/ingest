@@ -20,19 +20,16 @@ df[g_full_path] = df[g_full_path].apply(eval).apply(np.array)
 print(df.head())
 
 
-def create_context(embeds_index, question, data_frame, max_len=1800):
+def create_context(question, data_frame, max_len=1800):
     """
     Create a context for a question by finding the most similar context from the dataframe
     """
-
-    if embeds_index is None:
-        raise ValueError("embeds_index or embeddings .csv filename argument must not be None")
 
     # Get the embeddings for the question
     q_embeddings = openai.Embedding.create(input=question, engine='text-embedding-ada-002')['data'][0]['embedding']
 
     # Get the distances from the embeddings
-    data_frame['distances'] = distances_from_embeddings(q_embeddings, data_frame[embeds_index].values,
+    data_frame['distances'] = distances_from_embeddings(q_embeddings, data_frame['embeddings'].values,
                                                         distance_metric='cosine')
 
     returns = []
@@ -55,29 +52,14 @@ def create_context(embeds_index, question, data_frame, max_len=1800):
     return "\n\n###\n\n".join(returns)
 
 
-def answer_question(
-        embeds_index,
-        data_frame,
-        model="gpt-3.5-turbo",
-        question="Am I allowed to publish model outputs to Twitter, without a human review?",
-        max_len=1800,
-        debug=False,
-        max_tokens=150,
-        stop_sequence=None
-):
+def answer_question(data_frame, model="gpt-3.5-turbo",
+                    question="Am I allowed to publish model outputs to Twitter, without a human review?", max_len=1800,
+                    debug=False, max_tokens=150, stop_sequence=None):
     """
     Answer a question based on the most similar context from the dataframe texts
     """
 
-    if embeds_index is None:
-        raise ValueError("embeds_index or embeddings .csv filename argument must not be None")
-
-    context = create_context(
-        embeds_index,
-        question,
-        data_frame,
-        max_len=max_len,
-    )
+    context = create_context(question, data_frame, max_len=max_len)
 
     # If debug, print the raw model response
     if debug:
@@ -107,8 +89,8 @@ def answer_question(
         return ""
 
 
-print(answer_question(g_full_path, df, QA_GPT_MODEL, question="What day is it?", debug=False))
+print(answer_question(df, QA_GPT_MODEL, question="What day is it?", debug=False))
 print()
-print(answer_question(g_full_path, df, QA_GPT_MODEL, question="What is op stack?",))
+print(answer_question(df, QA_GPT_MODEL, question="What is op stack?"))
 print()
-print(answer_question(g_full_path, df, QA_GPT_MODEL, question="What is ethereum equivalence?",))
+print(answer_question(df, QA_GPT_MODEL, question="What is ethereum equivalence?"))
