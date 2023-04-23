@@ -5,14 +5,16 @@ import pandas as pd
 from openai.embeddings_utils import distances_from_embeddings
 
 GPT_3_5_TURBO = "gpt-3.5-turbo"
+GPT_4 = "gpt-4"
 
 # This file is meant for interactive mode, so we don't need to pass in a filename
 # call load_data() to load the data from a file
 g_full_path = None
 
 # Total for GPT-3.5-turbo: 4096
-MAX_LEN = 2896
-MAX_TOKENS = 1200
+# Total for GPT-4: 8192
+MAX_LEN = 6192
+MAX_TOKENS = 2000
 
 # For future use
 size = "ada"
@@ -50,12 +52,26 @@ def create_context(question, data_frame, max_len=1800):
     return "\n\n###\n\n".join(returns)
 
 
-def answer_question(data_frame, model=GPT_3_5_TURBO,
+def answer_question(data_frame, model=GPT_4,
                     question="Am I allowed to publish model outputs to Twitter, without a human review?",
-                    max_len_in=MAX_LEN, debug=False, max_tokens_in=MAX_TOKENS, stop_sequence=None):
+                    max_len_in=MAX_LEN, max_tokens_in=MAX_TOKENS, temperature=0.8, debug=False, stop_sequence=None):
     """
     Answer a question based on the most similar context from the dataframe texts
     """
+    if model == GPT_4 and max_len_in + max_tokens_in > 8192:
+        raise ValueError("The sum of max_len_in and max_tokens_in exceeds the GPT-4 limit of 8192 tokens.")
+    elif model == GPT_3_5_TURBO and max_len_in + max_tokens_in > 4096:
+        raise ValueError("The sum of max_len_in and max_tokens_in exceeds the GPT-3.5-turbo limit of 4096 tokens.")
+
+    # Calculate the percentage of the total that max_len_in and max_tokens_in are
+    sum_tokens = max_len_in + max_tokens_in
+    percentage_max_len = (max_len_in / sum_tokens) * 100
+    percentage_max_tokens = (max_tokens_in / sum_tokens) * 100
+
+    print(
+        f"max_length is {percentage_max_len:.2f}%, max_tokens_in is {percentage_max_tokens:.2f}% "
+        f"of the total {sum_tokens:.0f}.")
+
     context = create_context(question, data_frame, max_len=max_len_in)
     # If debug, print the raw model response
     if debug:
@@ -78,7 +94,7 @@ def answer_question(data_frame, model=GPT_3_5_TURBO,
             max_tokens=max_tokens_in,
             n=1,
             stop=stop_sequence,
-            temperature=0.8,
+            temperature=temperature,
         )
 
         return response.choices[0].message['content'].strip()
