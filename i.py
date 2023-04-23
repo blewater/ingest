@@ -4,6 +4,10 @@ import openai
 import pandas as pd
 from openai.embeddings_utils import distances_from_embeddings
 
+GPT_3_5_TOTAL_TOKENS = 4096
+
+GPT_4_TOTAL_TOKENS = 8192
+
 GPT_3_5_TURBO = "gpt-3.5-turbo"
 GPT_4 = "gpt-4"
 
@@ -58,9 +62,16 @@ def answer_question(data_frame, model=GPT_4,
     """
     Answer a question based on the most similar context from the dataframe texts
     """
-    if model == GPT_4 and max_len_in + max_tokens_in > 8192:
+    token_limit = GPT_4_TOTAL_TOKENS if model == GPT_4 else GPT_3_5_TOTAL_TOKENS
+
+    if max_len_in == 0:
+        max_len_in = token_limit - max_tokens_in
+    elif max_tokens_in == 0:
+        max_tokens_in = token_limit - max_len_in
+
+    if model == GPT_4 and max_len_in + max_tokens_in > GPT_4_TOTAL_TOKENS:
         raise ValueError("The sum of max_len_in and max_tokens_in exceeds the GPT-4 limit of 8192 tokens.")
-    elif model == GPT_3_5_TURBO and max_len_in + max_tokens_in > 4096:
+    elif model == GPT_3_5_TURBO and max_len_in + max_tokens_in > GPT_3_5_TOTAL_TOKENS:
         raise ValueError("The sum of max_len_in and max_tokens_in exceeds the GPT-3.5-turbo limit of 4096 tokens.")
 
     # Calculate the percentage of the total that max_len_in and max_tokens_in are
