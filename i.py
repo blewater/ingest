@@ -65,13 +65,13 @@ def answer_question(data_frame, model=GPT_4,
     token_limit = GPT_4_TOTAL_TOKENS if model == GPT_4 else GPT_3_5_TOTAL_TOKENS
 
     if max_len_in == 0:
-        max_len_in = token_limit - max_tokens_in
+        max_len_in = token_limit - max_tokens_in - 1
     elif max_tokens_in == 0:
-        max_tokens_in = token_limit - max_len_in
+        max_tokens_in = token_limit - max_len_in - 1
 
     if model == GPT_4 and max_len_in + max_tokens_in > GPT_4_TOTAL_TOKENS:
         raise ValueError("The sum of max_len_in and max_tokens_in exceeds the GPT-4 limit of 8192 tokens.")
-    elif model == GPT_3_5_TURBO and max_len_in + max_tokens_in > GPT_3_5_TOTAL_TOKENS:
+    elif model == GPT_3_5_TURBO and max_len_in + max_tokens_in > 4096:
         raise ValueError("The sum of max_len_in and max_tokens_in exceeds the GPT-3.5-turbo limit of 4096 tokens.")
 
     # Calculate the percentage of the total that max_len_in and max_tokens_in are
@@ -80,7 +80,8 @@ def answer_question(data_frame, model=GPT_4,
     percentage_max_tokens = (max_tokens_in / sum_tokens) * 100
 
     print(
-        f"max_length is {percentage_max_len:.2f}%, max_tokens_in is {percentage_max_tokens:.2f}% "
+        f"max_length is {percentage_max_len:.2f}% ({max_len_in}), "
+        f"max_tokens_in is {percentage_max_tokens:.2f}% ({max_tokens_in}) "
         f"of the total {sum_tokens:.0f}.")
 
     context = create_context(question, data_frame, max_len=max_len_in)
@@ -94,7 +95,7 @@ def answer_question(data_frame, model=GPT_4,
         messages = [
             {"role": "system", "content": "You are an AI that answers questions based on the provided context."},
             {"role": "system", "content": "Let's think step by step."},
-            {"role": "system", "content": "Respond as an expert."},
+            {"role": "system", "content": "Respond as an expert in great technical detail including code snippets"},
             {"role": "user", "content": f"Context: {context}\n\n---\n\nQuestion: {question}\nAnswer:"}
         ]
 
